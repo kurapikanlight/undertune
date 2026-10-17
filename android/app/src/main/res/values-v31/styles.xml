@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/undertune_launch</item>
+        <item name="android:windowSplashScreenBackground">@color/undertune_launch</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/undertune_launch</item>
+        <item name="android:statusBarColor">@color/undertune_launch</item>
+        <item name="android:navigationBarColor">@color/undertune_launch</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

@@ -1,0 +1,99 @@
+# Local toolchains and workspace configuration
+/.tools/
+/.agents/
+/.codex/
+/.aws/
+/.superpowers/
+/.skills/
+/skills/
+/.claude/
+/.cursor/
+/.github/agents/
+/.github/skills/
+/.github/prompts/
+/.github/copilot-instructions.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+SKILL.md
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Generated Flutter/Dart files (keep pubspec.yaml, pubspec.lock and .metadata)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+/app/.android/
+/app/.ios/
+.widget_preview/
+
+# Generated Android/Gradle files (keep android/ source and the Gradle wrapper)
+.gradle/
+.kotlin/
+.cxx/
+.externalNativeBuild/
+local.properties
+/android/captures/
+
+# Build outputs, test coverage and crash/profiling data
+build/
+coverage/
+*.apk
+*.apks
+*.aab
+*.aar
+*.dex
+*.class
+*.hprof
+*.jfr
+app.*.symbols
+app.*.map.json
+*.log
+
+# Machine-specific signing credentials and environment variables
+key.properties
+*.keystore
+*.jks
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Python caches used by the backend updater and its tests
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# OS/editor temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Old handoffs and archives, not the current app source
+/Undertune-Flutter-Handoff/
+*.zip
+
+# Upstream checkout is restored by scripts/setup-backend.sh from the exact
+# repository/revision in vendor/pipepipe.lock.json. Keep that pin and scripts,
+# not another repository's Git history, caches or generated build outputs.
+/vendor/PipePipeExtractor/
+/vendor/.pipepipe-update.lock
+
+# Local development evidence and planning; keep README, DEVELOPMENT and branding
+/.checks/
+/PROGRESS.md
+/docs/*_QA.md
+/docs/superpowers/
+/WEBSITE_PROMPT.txt

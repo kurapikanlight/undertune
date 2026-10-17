@@ -1,0 +1,40 @@
+name: undertune
+description: Undertune music and video, powered by PipePipe.
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.32.8 <3.35.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  crypto: ^3.0.7
+  just_audio: ^0.10.6
+  audio_service: 0.18.19
+  shared_preferences: 2.5.3
+  shared_preferences_android: 2.4.13
+  audio_session: 0.2.2
+  url_launcher: 6.3.2
+  url_launcher_android: 6.3.20
+  video_player: 2.10.0
+  video_player_android: 2.8.15
+dev_dependencies:
+  shared_preferences_platform_interface: ^2.4.1
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Feelfree
+      fonts:
+        - asset: assets/fonts/Feelfree-Regular.ttf
+          weight: 400
+  assets:
+    - assets/branding/wordmark.webp
+    - assets/branding/signature.webp
+    - assets/licenses/
+  module:
+    androidX: true
+    androidPackage: com.kafeyn.undertune_ui
+    iosBundleIdentifier: com.kafeyn.undertuneUI
