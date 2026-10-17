@@ -20,7 +20,15 @@ Undertune lets you listen to music, watch videos, and keep your favorites togeth
 - Download audio and videos for offline playback, and automatically download new songs added to enabled playlists.
 - Make it yours with animated themes and custom playlist covers.
 
-Install the Android APK on your phone. Choose **ARM64** for most modern phones, or the **universal APK** for broader device support.
+Download the APK, then open it on your Android phone to install Undertune.
+
+<p align="center">
+  <a href="https://github.com/kurapikanlight/undertune/releases/download/v1.0.0/Undertune.apk">
+    <img src="docs/assets/download-android.svg" alt="Download Undertune for Android" width="300" height="56">
+  </a>
+  <br>
+  <sub>Version 1.0.0 · Android APK</sub>
+</p>
 
 ### Open-source credits
 
