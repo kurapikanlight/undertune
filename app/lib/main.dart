@@ -31,6 +31,7 @@ import 'widgets/app_navigation.dart';
 import 'widgets/audio_mini_player.dart';
 import 'widgets/branding.dart';
 import 'widgets/video_card.dart';
+import 'widgets/sleep_timer_controls.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,7 @@ class _UndertuneAppState extends State<UndertuneApp> {
 
   @override
   void dispose() {
+    widget.background?.sleepTimer.cancel();
     widget.background?.unbindMusic();
     _playback.dispose();
     _downloads.dispose();
@@ -281,7 +283,8 @@ class _UndertuneShellState extends State<UndertuneShell>
     }
   }
 
-  Future<void> _actions(Track track) async {
+  Future<void> _actions(Track track, {bool playerControls = false}) async {
+    final timer = playerControls ? widget.background?.sleepTimer : null;
     if (track.live) {
       final saved = library.liveStreams.any((t) => t.key == track.key);
       final action = await showModalBottomSheet<String>(
@@ -308,11 +311,19 @@ class _UndertuneShellState extends State<UndertuneShell>
                 title: const Text('Copy link'),
                 onTap: () => Navigator.pop(c, 'copy'),
               ),
+              if (timer != null)
+                SleepTimerTile(
+                  timer: timer,
+                  onTap: () => Navigator.pop(c, 'sleep'),
+                ),
             ],
           ),
         ),
       );
       if (!mounted) return;
+      if (action == 'sleep' && timer != null) {
+        await showSleepTimer(context, timer);
+      }
       if (action == 'live') await _liveAction(track);
       if (action == 'copy') {
         await Clipboard.setData(ClipboardData(text: track.url));
@@ -380,6 +391,11 @@ class _UndertuneShellState extends State<UndertuneShell>
                 title: const Text('Copy link'),
                 onTap: () => Navigator.pop(c, 'copy'),
               ),
+              if (timer != null)
+                SleepTimerTile(
+                  timer: timer,
+                  onTap: () => Navigator.pop(c, 'sleep'),
+                ),
               if (!track.video)
                 ListTile(
                   leading: const Icon(Icons.ondemand_video),
@@ -400,6 +416,9 @@ class _UndertuneShellState extends State<UndertuneShell>
       ),
     );
     if (!mounted) return;
+    if (action == 'sleep' && timer != null) {
+      await showSleepTimer(context, timer);
+    }
     if (action == 'likeVideo') {
       await _guard(() => library.toggleLike(track.asVideo(true)));
     }
@@ -514,7 +533,7 @@ class _UndertuneShellState extends State<UndertuneShell>
             playback: playback,
             library: library,
             onAdd: _add,
-            onActions: _actions,
+            onActions: (t) => _actions(t, playerControls: true),
             onPlay: (t) => _play(t, [t]),
           ),
         ),
@@ -1152,7 +1171,8 @@ class _UndertuneShellState extends State<UndertuneShell>
                       setState(() => _videoMinimized = true);
                       _openVideoChannel(channel);
                     },
-                    onActions: _actions,
+                    onActions: (t) =>
+                        _actions(t, playerControls: t.key == _videoTrack?.key),
                     minimized: _videoMinimized,
                     loadRequest: _videoRequest,
                     onMinimize: () => setState(() => _videoMinimized = true),

@@ -4,9 +4,13 @@ import 'package:just_audio/just_audio.dart' show ProcessingState;
 import 'package:video_player/video_player.dart';
 import 'extractor.dart';
 import 'playback.dart';
+import 'sleep_timer.dart';
 
 /// One Android media session; playback stays in the existing audio/video players.
 class UndertuneMediaSession extends BaseAudioHandler {
+  late final sleepTimer = SleepTimer(onExpired: _pauseForSleep);
+  int _pauseRevision = 0;
+  int get pauseRevision => _pauseRevision;
   Playback? _music;
   StreamSubscription<Duration>? _position;
   List<Track>? _publishedQueue;
@@ -48,6 +52,17 @@ class UndertuneMediaSession extends BaseAudioHandler {
     controller.addListener(_syncVideo);
     queue.add([_item(track, controller.value.duration)]);
     _syncVideo();
+  }
+
+  Future<void> startVideo(
+    VideoPlayerController controller,
+    Track track,
+    void Function()? onClose, {
+    required int pauseRevision,
+  }) async {
+    attachVideo(controller, track, onClose);
+    // Timer expiry or an explicit pause during extraction/initialization wins.
+    if (pauseRevision == _pauseRevision) await play();
   }
 
   void detachVideo(VideoPlayerController controller) {
@@ -137,7 +152,9 @@ class UndertuneMediaSession extends BaseAudioHandler {
         bufferedPosition: music.bufferedPosition,
         speed: music.speed,
         queueIndex: music.index >= 0 ? music.index : null,
-        repeatMode: AudioServiceRepeatMode.values[music.repeat],
+        repeatMode: music.repeat == 0
+            ? AudioServiceRepeatMode.none
+            : AudioServiceRepeatMode.one,
         shuffleMode: music.shuffle
             ? AudioServiceShuffleMode.all
             : AudioServiceShuffleMode.none,
@@ -221,8 +238,15 @@ class UndertuneMediaSession extends BaseAudioHandler {
     }
   }
 
+  Future<void> _pauseForSleep() async {
+    final hadVideo = _video != null;
+    await pause();
+    if (hadVideo) await _music?.pause();
+  }
+
   @override
   Future<void> pause() async {
+    ++_pauseRevision;
     if (_video != null) {
       _videoPaused = true;
       _videoPauseDecision?.cancel();
@@ -277,6 +301,8 @@ class UndertuneMediaSession extends BaseAudioHandler {
 
   @override
   Future<void> stop() async {
+    ++_pauseRevision;
+    sleepTimer.cancel();
     if (_video != null) {
       await _video!.pause();
       _closeVideo?.call();

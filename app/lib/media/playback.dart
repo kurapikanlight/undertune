@@ -18,6 +18,7 @@ class Playback extends ChangeNotifier {
     final player = AudioPlayer(useProxyForRequestHeaders: false);
     var previousProcessingState = ProcessingState.idle;
     player.playerStateStream.listen((state) {
+      if (_disposed) return;
       // Stopping a completed source also changes its playing flag. Advance only
       // on entering completed, so that second state event cannot skip a song.
       final completed =
@@ -25,19 +26,43 @@ class Playback extends ChangeNotifier {
           previousProcessingState != ProcessingState.completed;
       previousProcessingState = state.processingState;
       notifyListeners();
-      if (completed) {
-        if (repeat == 1) {
-          unawaited(player.seek(Duration.zero).then((_) => player.play()));
+      if (completed && _playWhenReady) {
+        if (repeat > 0) {
+          unawaited(_replayCurrent(player));
         } else {
           unawaited(next(automatic: true));
         }
       }
     });
     player.errorStream.listen((event) {
+      if (_disposed) return;
       error = 'Playback failed: ${event.message}';
       notifyListeners();
     });
     return player;
+  }
+
+  Future<void> _replayCurrent(AudioPlayer player) async {
+    final generation = _generation;
+    _restarting = true;
+    if (repeat == 1) repeat = 0;
+    notifyListeners();
+    try {
+      await player.seek(Duration.zero);
+      if (!_disposed && generation == _generation && _playWhenReady) {
+        unawaited(player.play());
+      }
+    } catch (_) {
+      if (!_disposed && generation == _generation) {
+        _playWhenReady = false;
+        error = 'Couldn’t replay this track.';
+      }
+    } finally {
+      if (!_disposed && generation == _generation) {
+        _restarting = false;
+        notifyListeners();
+      }
+    }
   }
 
   Track? current;
@@ -45,19 +70,19 @@ class Playback extends ChangeNotifier {
   List<Track> queue = [], related = [];
   int index = 0, repeat = 0, _generation = 0;
   bool loading = false, shuffle = false;
-  bool _playWhenReady = false;
+  bool _playWhenReady = false, _restarting = false, _disposed = false;
   // Keep the foreground service active across EOF and the next source load.
   // A user pause or the actual end of the queue still releases playback.
   bool get wantsToPlay =>
-      loading || (processingState == ProcessingState.completed && _continues)
+      loading ||
+          _restarting ||
+          (processingState == ProcessingState.completed && _continues)
       ? _playWhenReady
       : playing;
   bool get _continues =>
-      repeat == 1 ||
+      repeat > 0 ||
       (queue.isNotEmpty &&
-          (repeat == 2 ||
-              (shuffle && queue.length > 1) ||
-              index + 1 < queue.length));
+          ((shuffle && queue.length > 1) || index + 1 < queue.length));
   bool playingFromFile = false;
   int get sessionId => _generation;
   Duration get position => _audio?.position ?? Duration.zero;
@@ -79,6 +104,8 @@ class Playback extends ChangeNotifier {
     String? playlistId,
   }) async {
     final generation = ++_generation;
+    _restarting = false;
+    if (repeat == 1 && current?.key != track.key) repeat = 0;
     current = track;
     final local = localFor?.call(track);
     playingFromFile = local != null;
@@ -180,7 +207,7 @@ class Playback extends ChangeNotifier {
         ? (index + 1 + Random().nextInt(queue.length - 1)) % queue.length
         : index + 1;
     if (target >= queue.length) {
-      if (automatic && repeat != 2) return;
+      if (automatic) return;
       target = 0;
     }
     await play(queue[target]);
@@ -213,6 +240,8 @@ class Playback extends ChangeNotifier {
   Future<void> stop() async {
     ++_generation;
     _playWhenReady = false;
+    _restarting = false;
+    repeat = 0;
     final stopping = _audio?.stop();
     current = null;
     playlistId = null;
@@ -224,6 +253,9 @@ class Playback extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    ++_generation;
+    _playWhenReady = false;
     _audio?.dispose();
     super.dispose();
   }

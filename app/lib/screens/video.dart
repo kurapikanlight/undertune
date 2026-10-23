@@ -123,6 +123,7 @@ class _VideoScreenState extends State<VideoScreen> with WidgetsBindingObserver {
 
   Future<void> _load([Track? next]) async {
     final generation = ++_generation;
+    final pauseRevision = widget.background?.pauseRevision ?? 0;
     _hideControls?.cancel();
     final old = _video;
     setState(() {
@@ -170,9 +171,13 @@ class _VideoScreenState extends State<VideoScreen> with WidgetsBindingObserver {
       _video = controller;
       pending = null;
       controller.addListener(_progress);
-      widget.background?.attachVideo(controller, _track, widget.onClose);
       if (widget.background != null) {
-        await widget.background!.play();
+        await widget.background!.startVideo(
+          controller,
+          _track,
+          widget.onClose,
+          pauseRevision: pauseRevision,
+        );
       } else {
         await controller.play();
       }
@@ -415,6 +420,20 @@ class _VideoScreenState extends State<VideoScreen> with WidgetsBindingObserver {
                         : _minimize,
                   ),
                 ),
+                if (widget.onActions != null)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: IconButton(
+                      tooltip: 'Video actions',
+                      color: Colors.white,
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        semanticLabel: 'Video actions',
+                      ),
+                      onPressed: () => widget.onActions!(_track),
+                    ),
+                  ),
                 if (ready && !value!.isBuffering)
                   Center(
                     child: Row(

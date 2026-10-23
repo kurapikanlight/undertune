@@ -46,6 +46,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Widget _player(BuildContext context) {
     final p = widget.playback, t = p.current;
+    final repeatLabel = [
+      'Repeat off',
+      'Replay once',
+      'Loop continuously',
+    ][p.repeat];
     if (t == null) {
       return Scaffold(
         appBar: AppBar(),
@@ -78,6 +83,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   icon: const Icon(
                                     Icons.keyboard_arrow_down,
                                     size: 30,
+                                    semanticLabel: 'Collapse player',
                                   ),
                                 ),
                                 const Expanded(
@@ -94,7 +100,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 IconButton(
                                   tooltip: 'Track actions',
                                   onPressed: () => widget.onActions(t),
-                                  icon: const Icon(Icons.more_horiz),
+                                  icon: const Icon(
+                                    Icons.more_horiz,
+                                    semanticLabel: 'Track actions',
+                                  ),
                                 ),
                               ],
                             ),
@@ -178,15 +187,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                         }
                                       },
                                       isSelected: widget.library.isLiked(t),
-                                      icon: FavoriteIcon(
-                                        liked: widget.library.isLiked(t),
-                                        size: 24,
+                                      icon: Semantics(
+                                        label: widget.library.isLiked(t)
+                                            ? 'Unlike'
+                                            : 'Like',
+                                        child: FavoriteIcon(
+                                          liked: widget.library.isLiked(t),
+                                          size: 24,
+                                        ),
                                       ),
                                     ),
                                     IconButton(
                                       tooltip: 'Add to playlist',
                                       onPressed: () => widget.onAdd(t),
-                                      icon: const Icon(Icons.playlist_add),
+                                      icon: const Icon(
+                                        Icons.playlist_add,
+                                        semanticLabel: 'Add to playlist',
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -206,6 +223,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                     ),
                                   ),
                                 StreamBuilder<Duration>(
+                                  key: ValueKey(t.key),
+                                  initialData: p.position,
                                   stream: p.positionStream,
                                   builder: (context, snapshot) {
                                     final duration = p.duration.inMilliseconds
@@ -276,6 +295,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       onPressed: p.toggleShuffle,
                                       icon: Icon(
                                         Icons.shuffle,
+                                        semanticLabel: p.shuffle
+                                            ? 'Shuffle on'
+                                            : 'Shuffle',
                                         color: p.shuffle
                                             ? Theme.of(
                                                 context,
@@ -295,6 +317,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       icon: const Icon(
                                         Icons.skip_previous_rounded,
                                         size: 38,
+                                        semanticLabel: 'Previous',
                                       ),
                                     ),
                                     FilledButton(
@@ -343,19 +366,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       icon: const Icon(
                                         Icons.skip_next_rounded,
                                         size: 38,
+                                        semanticLabel: 'Next',
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: [
-                                        'Repeat off',
-                                        'Repeat track',
-                                        'Repeat queue',
-                                      ][p.repeat],
+                                      tooltip: repeatLabel,
+                                      isSelected: p.repeat > 0,
                                       onPressed: p.cycleRepeat,
                                       icon: Icon(
-                                        p.repeat == 1
-                                            ? Icons.repeat_one
-                                            : Icons.repeat,
+                                        switch (p.repeat) {
+                                          1 => Icons.repeat_one_rounded,
+                                          2 => Icons.all_inclusive_rounded,
+                                          _ => Icons.repeat_rounded,
+                                        },
+                                        semanticLabel: repeatLabel,
                                         color: p.repeat > 0
                                             ? Theme.of(
                                                 context,
@@ -403,6 +427,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       icon: const Icon(
                                         Icons.ios_share,
                                         size: 20,
+                                        semanticLabel: 'Copy song link',
                                       ),
                                     ),
                                   ],
@@ -456,20 +481,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
     );
   }
 
-  void _queue(BuildContext context) => showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (c) => SafeArea(
-      child: ListView(
-        children: [
-          const ListTile(
-            title: Text(
-              'Up next',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ...widget.playback.queue.map(
-            (t) => ListTile(
+  void _queue(BuildContext context) {
+    final queue = List<Track>.of(widget.playback.queue);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (c) => SafeArea(
+        child: ListView.builder(
+          itemCount: queue.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return const ListTile(
+                title: Text(
+                  'Up next',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              );
+            }
+            final t = queue[index - 1];
+            return ListTile(
               leading: Artwork(t.artwork),
               title: Text(
                 t.title,
@@ -481,10 +511,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 Navigator.pop(c);
                 widget.playback.play(t);
               },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

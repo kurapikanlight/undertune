@@ -192,106 +192,112 @@ class _DownloadsScreenState extends State<DownloadsScreen>
           .toList();
       return RefreshIndicator(
         onRefresh: widget.downloads.refresh,
-        child: ListView(
+        child: ListView.builder(
           key: PageStorageKey('downloads-$kind'),
           padding: EdgeInsets.only(
             bottom: MediaQuery.paddingOf(context).bottom + 16,
           ),
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            if (widget.downloads.error != null)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Downloads couldn’t refresh. Check your connection and try again.',
-                      textAlign: TextAlign.center,
-                    ),
-                    TextButton(
-                      onPressed: widget.downloads.refresh,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            if (!widget.downloads.hasLoaded && widget.downloads.loading)
-              const ContentSkeleton(
-                count: 4,
-                horizontalPadding: 16,
-                verticalPadding: 10,
-                artworkGap: 16,
-                actionWidth: 48,
-                label: 'Loading downloads',
-              )
-            else if (entries.isEmpty && widget.downloads.error == null)
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Text('No $kind downloads yet.'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Choose $kind in Download settings, then download from an item’s menu.',
-                    ),
-                  ],
-                ),
-              ),
-            ...entries.map(
-              (e) => ListTile(
-                leading: Artwork(e.track.artwork),
-                title: Text(
-                  e.track.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  '${e.kind == 'video' ? 'Video' : 'Audio'}${e.quality.isEmpty ? '' : ' · ${e.quality}'} · ${e.status == 'complete'
-                      ? 'Available offline'
-                      : e.status == 'downloading' && e.total > 0
-                      ? 'Downloading · ${(100 * e.bytes / e.total).round()}%'
-                      : e.status}',
-                ),
-                onTap: e.localUrl == null ? null : () => widget.onPlay(e),
-                trailing: IconButton(
-                  tooltip: 'Remove download',
-                  icon: const Icon(Icons.close),
-                  onPressed: () async {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Text('Remove download?'),
-                        content: const Text(
-                          'This removes the downloaded file. Your playlists and likes remain.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(c, false),
-                            child: const Text('Cancel'),
+          itemCount: entries.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Column(
+                children: [
+                  if (widget.downloads.error != null)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Downloads couldn’t refresh. Check your connection and try again.',
+                            textAlign: TextAlign.center,
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pop(c, true),
-                            child: const Text('Remove'),
+                            onPressed: widget.downloads.refresh,
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
-                    );
-                    if (confirm == true) {
-                      try {
-                        await widget.downloads.remove(e.id);
-                      } catch (error) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text('$error')));
-                        }
+                    ),
+                  if (!widget.downloads.hasLoaded && widget.downloads.loading)
+                    const ContentSkeleton(
+                      count: 4,
+                      horizontalPadding: 16,
+                      verticalPadding: 10,
+                      artworkGap: 16,
+                      actionWidth: 48,
+                      label: 'Loading downloads',
+                    )
+                  else if (entries.isEmpty && widget.downloads.error == null)
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Text('No $kind downloads yet.'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Choose $kind in Download settings, then download from an item’s menu.',
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            }
+            final e = entries[index - 1];
+            return ListTile(
+              leading: Artwork(e.track.artwork),
+              title: Text(
+                e.track.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${e.kind == 'video' ? 'Video' : 'Audio'}${e.quality.isEmpty ? '' : ' · ${e.quality}'} · ${e.status == 'complete'
+                    ? 'Available offline'
+                    : e.status == 'downloading' && e.total > 0
+                    ? 'Downloading · ${(100 * e.bytes / e.total).round()}%'
+                    : e.status}',
+              ),
+              onTap: e.localUrl == null ? null : () => widget.onPlay(e),
+              trailing: IconButton(
+                tooltip: 'Remove download',
+                icon: const Icon(Icons.close),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (c) => AlertDialog(
+                      title: const Text('Remove download?'),
+                      content: const Text(
+                        'This removes the downloaded file. Your playlists and likes remain.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(c, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(c, true),
+                          child: const Text('Remove'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    try {
+                      await widget.downloads.remove(e.id);
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('$error')));
                       }
                     }
-                  },
-                ),
+                  }
+                },
               ),
-            ),
-          ],
+            );
+          },
         ),
       );
     },

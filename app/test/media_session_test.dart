@@ -159,6 +159,12 @@ void main() {
       music.repeat = 1;
       music.notifyListeners();
       expect(session.playbackState.value.playing, isTrue);
+      music.repeat = 2;
+      music.notifyListeners();
+      expect(
+        session.playbackState.value.repeatMode,
+        AudioServiceRepeatMode.one,
+      );
       music.repeat = 0;
       music.shuffle = true;
       music.notifyListeners();
